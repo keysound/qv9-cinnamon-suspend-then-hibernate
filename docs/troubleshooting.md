@@ -7,20 +7,20 @@ This guide starts with **observable symptoms**, not with assumptions about which
 Run these from the affected machine's Cinnamon desktop session:
 
 ```bash
-printf '\\n== Cinnamon ==\\n'
+printf '\n== Cinnamon ==\n'
 gsettings get org.cinnamon.SessionManager suspend-then-hibernate
 gsettings get org.cinnamon.SessionManager prefer-hybrid-sleep
 gsettings get org.cinnamon.settings-daemon.plugins.power lid-close-ac-action
 gsettings get org.cinnamon.settings-daemon.plugins.power lid-close-battery-action
 
-printf '\\n== Systemd ==\\n'
+printf '\n== Systemd ==\n'
 systemd-analyze cat-config systemd/sleep.conf
 systemd-analyze cat-config systemd/logind.conf
 
-printf '\\n== Lid ownership ==\\n'
+printf '\n== Lid ownership ==\n'
 systemd-inhibit --list --no-pager
 
-printf '\\n== Sleep service ==\\n'
+printf '\n== Sleep service ==\n'
 journalctl -b -u systemd-suspend-then-hibernate.service --no-pager
 ```
 

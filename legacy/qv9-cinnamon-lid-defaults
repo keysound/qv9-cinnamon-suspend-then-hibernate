@@ -1,0 +1,30 @@
+#!/bin/sh
+# QV9 Cinnamon Login Safety Defaults v0.2
+set -eu
+
+SCHEMA=org.cinnamon.settings-daemon.plugins.power
+
+# Do not guess a runtime directory if the session environment
+# is incomplete.
+if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+    logger -t qv9-lid-login-defaults \
+      "ERROR: XDG_RUNTIME_DIR unavailable"
+    exit 1
+fi
+
+LOCK="$XDG_RUNTIME_DIR/qv9-lid-owner.lock"
+
+# Keep FD 9 open until all GSettings writes finish.
+exec 9>"$LOCK"
+
+if ! /usr/bin/flock -n 9; then
+    logger -t qv9-lid-login-defaults \
+      "Ownership lock busy; skipped Cinnamon restoration"
+    exit 0
+fi
+
+/usr/bin/gsettings set "$SCHEMA" lid-close-ac-action suspend
+/usr/bin/gsettings set "$SCHEMA" lid-close-battery-action suspend
+
+logger -t qv9-lid-login-defaults \
+  "Cinnamon lid actions restored to suspend at login"

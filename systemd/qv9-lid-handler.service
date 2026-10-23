@@ -1,0 +1,11 @@
+[Unit]
+Description=QV9 Lid Event Monitor
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.local/lib/qv9/lid-handler.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

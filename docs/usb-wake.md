@@ -1,22 +1,39 @@
-# USB wake hook / USB 喚醒設定
+# USB wake behavior on the Panasonic QV9
 
-The tested QV9 had an independent `/usr/lib/systemd/system-sleep/qv9-usb-wake`
-hook that temporarily disabled xHCI wake while the lid was closed and restored
-its prior value after sleep. This was useful with USB accessories attached.
+## Problem
 
-Logs verified two distinct phases of `SuspendThenHibernate`:
-- 23:13:52: close-lid s2idle; xHCI wake disabled
-- 23:43:53: resume to switch sleep states; wake restored, then disabled again
-- 00:04:52: post-hibernate resume; wake restored
+USB devices can be permitted to wake a laptop from suspend. On the tested QV9, attached peripherals could interfere with the desired lid-closed sleep behavior.
 
-**The precise live hook was not available in the source snapshot used to
-prepare this repository.** It is intentionally *not* replaced by a guessed
-implementation. Follow-up contribution should import the exact audited source,
-review path assumptions, and document power/wakeup permission behavior.
+The working machine had an additional systemd sleep hook at:
 
-Device node `0000:00:14.0` is QV9-specific. Find your own device and
-test separately before disabling wake sources. Some systems require USB input
-to recover from suspend, and changing this setting can strand a device.
+```text
+/usr/lib/systemd/system-sleep/qv9-usb-wake
+```
 
-此目錄暫時只有說明，不提供推測的 hook 原始碼。公開時不能把尚未
-核對的程式標成「實機驗收版」。
+When the lid was closed, that hook temporarily disabled wake capability for the machine's xHCI controller, then restored the previous setting after each sleep phase.
+
+## Observed behavior
+
+The sleep-hook logs for the complete timed cycle showed:
+
+| Time (local) | Event |
+| --- | --- |
+| 2026-10-23 23:13:52 | Lid closed; xHCI wake disabled before s2idle. |
+| 2026-10-23 23:43:53 | Wake setting restored after suspend; disabled again for the hibernate phase. |
+| 2026-10-24 00:04:52 | After resuming from S4, the original xHCI wake setting was restored. |
+
+This matters because `SuspendThenHibernate` involved **two** sleep-hook phases on the tested machine, not just the initial suspend.
+
+## Source availability
+
+**The exact deployed `qv9-usb-wake` script is not included in this repository.** The observations above come from the tested machine's journal, not from a replacement script distributed here. The repository can reproduce the Cinnamon/systemd configuration and optional observer code, but does **not** reproduce that additional QV9 USB wake behavior.
+
+The hardware identifier `0000:00:14.0` refers to the xHCI controller checked on this QV9. It is not a portable USB device selection.
+
+## Why copying wake settings is risky
+
+Wake-source behavior depends on the laptop firmware, USB controller, input devices, and chosen sleep state. Disabling the wrong source may prevent expected keyboard, mouse, or lid-triggered recovery.
+
+To investigate an unexpected wake, start by checking your device's own power and wake configuration and its system journal. Do not copy the QV9's PCI address into another computer.
+
+For the core sleep sequence, see [Architecture](architecture.md). For diagnosis and recovery, see [Troubleshooting](troubleshooting.md).
